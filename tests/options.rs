@@ -28,7 +28,7 @@ fn depth_limit_is_enforced_at_the_boundary() -> Result<(), Json5Error> {
         Json5ErrorKind::DepthLimitExceeded { limit: 2 }
     ));
     // Reported at the offending open bracket.
-    assert_eq!(error.position.byte, 2);
+    assert_eq!(error.position.byte(), 2);
 
     Ok(())
 }

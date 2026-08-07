@@ -59,10 +59,7 @@ impl Matcher for StringRule {
                 }
                 CharAt::Char { ch, width } => match ch {
                     _ if ch == char::from(quote) => {
-                        return Ok(Some(Match::new(
-                            Json5Token::String,
-                            index.saturating_add(1),
-                        )));
+                        return Ok(Match::from_len(Json5Token::String, index.saturating_add(1)));
                     }
                     '\\' => index = measure_escape(look, start, index)?,
                     '\n' | '\r' => {
@@ -238,7 +235,7 @@ mod tests {
                 matches!(error.kind, LexErrorKind::Unrecognized),
                 "input {input:?}"
             );
-            assert_eq!(error.position.byte, byte, "input {input:?}");
+            assert_eq!(error.position.byte(), byte, "input {input:?}");
         }
     }
 
@@ -246,11 +243,11 @@ mod tests {
     fn digit_escapes_are_rejected_at_the_backslash() {
         let error = lex_error("'\\1'");
         assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-        assert_eq!(error.position.byte, 1);
+        assert_eq!(error.position.byte(), 1);
 
         let error = lex_error("'\\09'");
         assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-        assert_eq!(error.position.byte, 1);
+        assert_eq!(error.position.byte(), 1);
     }
 
     #[test]
@@ -261,7 +258,7 @@ mod tests {
                 matches!(error.kind, LexErrorKind::Unrecognized),
                 "input {input:?}"
             );
-            assert_eq!(error.position.byte, 1, "input {input:?}");
+            assert_eq!(error.position.byte(), 1, "input {input:?}");
         }
     }
 
@@ -273,7 +270,7 @@ mod tests {
                 matches!(error.kind, LexErrorKind::UnterminatedDelimiter),
                 "input {input:?}"
             );
-            assert_eq!(error.position.byte, 0, "input {input:?}");
+            assert_eq!(error.position.byte(), 0, "input {input:?}");
         }
     }
 
@@ -289,7 +286,7 @@ mod tests {
             panic!("expected a lexical error");
         };
         assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-        assert_eq!(error.position.byte, 2);
+        assert_eq!(error.position.byte(), 2);
     }
 
     #[test]
@@ -297,8 +294,8 @@ mod tests {
         // Bytes: 0 `'`, 1 `\`, 2 LF, 3 `a`, 4 LF — the unescaped LF at byte 4 is on line 2.
         let error = lex_error("'\\\na\nb'");
         assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-        assert_eq!(error.position.byte, 4);
-        assert_eq!(error.position.line, 2);
-        assert_eq!(error.position.column, 2);
+        assert_eq!(error.position.byte(), 4);
+        assert_eq!(error.position.line(), 2);
+        assert_eq!(error.position.column(), 2);
     }
 }

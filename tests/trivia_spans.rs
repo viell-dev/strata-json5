@@ -97,11 +97,11 @@ fn spans_and_positions_are_exact() -> Result<(), Json5Error> {
         .first()
         .unwrap_or_else(|| panic!("one member"));
 
-    assert_eq!(member.name.span, Span::new(2, 5));
-    assert_eq!(member.name.start.column, 3);
-    assert_eq!(member.colon.span, Span::new(5, 6));
-    assert_eq!(member.value.span(), Span::new(7, 10));
-    assert_eq!(object.close.span, Span::new(11, 12));
+    assert_eq!(member.name.span, Span::from_start_len(2, 3));
+    assert_eq!(member.name.start.column(), 3);
+    assert_eq!(member.colon.span, Span::from_start_len(5, 1));
+    assert_eq!(member.value.span(), Span::from_start_len(7, 3));
+    assert_eq!(object.close.span, Span::from_start_len(11, 1));
 
     Ok(())
 }

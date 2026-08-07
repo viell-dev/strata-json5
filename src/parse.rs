@@ -104,7 +104,9 @@ impl fmt::Display for Json5Error {
             kind => write!(
                 formatter,
                 "{kind} at line {}, column {} (byte {})",
-                self.position.line, self.position.column, self.position.byte
+                self.position.line(),
+                self.position.column(),
+                self.position.byte()
             ),
         }
     }
@@ -396,9 +398,9 @@ impl<R: Read, M: MatcherSet<Kind = Json5Token>> Driver<R, M> {
                 _ => {
                     return Ok(SyntaxToken {
                         kind: token.kind,
-                        span: token.span,
-                        start: token.start,
-                        end: token.end,
+                        span: token.span(),
+                        start: token.start(),
+                        end: token.end(),
                         leading: std::mem::take(&mut self.pending),
                     });
                 }
@@ -421,9 +423,9 @@ impl<R: Read, M: MatcherSet<Kind = Json5Token>> Driver<R, M> {
     fn push_trivia(&mut self, kind: TriviaKind, token: &Token<Json5Token>) {
         self.pending.push(Trivia {
             kind,
-            span: token.span,
-            start: token.start,
-            end: token.end,
+            span: token.span(),
+            start: token.start(),
+            end: token.end(),
         });
     }
 
@@ -719,7 +721,7 @@ mod tests {
         scan_string_warnings(raw.as_bytes(), Position::START, &mut warnings);
         assert_eq!(warnings.len(), 1);
         assert_eq!(
-            warnings.first().map(|warning| warning.position.byte),
+            warnings.first().map(|warning| warning.position.byte()),
             Some(2)
         );
 

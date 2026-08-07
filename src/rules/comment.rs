@@ -32,14 +32,14 @@ impl Matcher for LineCommentRule {
 
         loop {
             match peek_char_at(look, index)? {
-                CharAt::End => return Ok(Some(Match::new(Json5Token::LineComment, index))),
+                CharAt::End => return Ok(Match::from_len(Json5Token::LineComment, index)),
                 CharAt::Invalid => {
                     // Line comments cannot contain line breaks, so the offset stays in-line.
                     return Err(LexError::unrecognized(offset_position(start, index)));
                 }
                 CharAt::Char { ch, width } => match ch {
                     '\n' | '\r' | '\u{2028}' | '\u{2029}' => {
-                        return Ok(Some(Match::new(Json5Token::LineComment, index)));
+                        return Ok(Match::from_len(Json5Token::LineComment, index));
                     }
                     _ => index = index.saturating_add(width),
                 },
@@ -84,10 +84,10 @@ impl Matcher for BlockCommentRule {
                         let bytes = look.peek(after.saturating_add(1))?;
 
                         if bytes.get(after) == Some(&b'/') {
-                            return Ok(Some(Match::new(
+                            return Ok(Match::from_len(
                                 Json5Token::BlockComment,
                                 after.saturating_add(1),
-                            )));
+                            ));
                         }
                     }
 
@@ -164,7 +164,7 @@ mod tests {
         // The first `*/` closes; the rest is separate (invalid) input.
         let error = lex_error("/* /* */ */");
         assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-        assert_eq!(error.position.byte, 9);
+        assert_eq!(error.position.byte(), 9);
     }
 
     #[test]
@@ -175,7 +175,7 @@ mod tests {
                 matches!(error.kind, LexErrorKind::UnterminatedDelimiter),
                 "input {input:?}"
             );
-            assert_eq!(error.position.byte, 0, "input {input:?}");
+            assert_eq!(error.position.byte(), 0, "input {input:?}");
         }
     }
 
@@ -183,7 +183,7 @@ mod tests {
     fn lone_slash_is_unrecognized() {
         let error = lex_error("/");
         assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-        assert_eq!(error.position.byte, 0);
+        assert_eq!(error.position.byte(), 0);
     }
 
     #[test]

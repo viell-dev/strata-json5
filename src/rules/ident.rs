@@ -106,7 +106,7 @@ impl Matcher for IdentifierRule {
             _ => Json5Token::Identifier,
         };
 
-        Ok(Some(Match::new(kind, len)))
+        Ok(Match::from_len(kind, len))
     }
 
     fn priority(&self) -> i32 {
@@ -236,7 +236,7 @@ mod tests {
         assert_eq!(ident_span(r"a\u0031")?, (Json5Token::Identifier, 0, 7));
         let error = lex_error(r"\u0031ab");
         assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-        assert_eq!(error.position.byte, 0);
+        assert_eq!(error.position.byte(), 0);
 
         Ok(())
     }
@@ -246,11 +246,11 @@ mod tests {
         // `ab\uZZZZ` — the identifier ends at `ab`; the backslash matches no rule.
         let error = lex_error(r"ab\uZZZZ");
         assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-        assert_eq!(error.position.byte, 2);
+        assert_eq!(error.position.byte(), 2);
 
         // A lone-surrogate escape does not denote a scalar value.
         let error = lex_error(r"a\uD800");
-        assert_eq!(error.position.byte, 1);
+        assert_eq!(error.position.byte(), 1);
     }
 
     #[test]

@@ -233,7 +233,7 @@ impl Matcher for WhitespaceRule {
             }
         }
 
-        Ok((len > 0).then(|| Match::new(Json5Token::Whitespace, len)))
+        Ok(Match::from_len(Json5Token::Whitespace, len))
     }
 }
 
@@ -286,46 +286,45 @@ pub(crate) fn peek_char_at(look: &mut Lookahead<'_>, offset: usize) -> Result<Ch
 /// (numbers are ASCII digits, signs, dots, and letters). Rules whose tokens can span lines use
 /// [`position_at`] instead.
 pub(crate) fn offset_position(start: Position, offset: usize) -> Position {
-    let offset = u64::try_from(offset).unwrap_or(u64::MAX);
-
-    Position {
-        byte: start.byte.saturating_add(offset),
-        line: start.line,
-        column: start.column.saturating_add(offset),
-    }
+    start.advanced_by(u64::try_from(offset).unwrap_or(u64::MAX))
 }
 
 /// Advances `position` over `bytes`, mirroring the lexer core's tracking exactly: the column
 /// advances one per byte, `\r`, `\n`, and `\r\n` each count as one line break, and U+2028/U+2029
 /// do **not** advance the line (the core is byte-oriented; line/column are diagnostics).
-pub(crate) fn advance_position(mut position: Position, bytes: &[u8]) -> Position {
+pub(crate) fn advance_position(position: Position, bytes: &[u8]) -> Position {
+    let mut byte = position.byte();
+    let mut line = position.line();
+    let mut column = position.column();
     let mut previous_was_cr = false;
 
-    for &byte in bytes {
-        position.byte = position.byte.saturating_add(1);
+    for &b in bytes {
+        byte = byte.saturating_add(1);
 
-        match byte {
+        match b {
             b'\r' => {
-                position.line = position.line.saturating_add(1);
-                position.column = 1;
+                line = line.saturating_add(1);
+                column = 1;
                 previous_was_cr = true;
             }
             b'\n' if previous_was_cr => {
                 previous_was_cr = false;
             }
             b'\n' => {
-                position.line = position.line.saturating_add(1);
-                position.column = 1;
+                line = line.saturating_add(1);
+                column = 1;
                 previous_was_cr = false;
             }
             _ => {
-                position.column = position.column.saturating_add(1);
+                column = column.saturating_add(1);
                 previous_was_cr = false;
             }
         }
     }
 
-    position
+    // Line and column stay one-based above (they only grow or reset to 1), so construction
+    // cannot fail; the fallback is unreachable.
+    Position::new(byte, line, column).unwrap_or(position)
 }
 
 /// Computes the position `offset` bytes past `start`, line-aware, for in-token error reporting.
@@ -340,12 +339,7 @@ pub(crate) fn position_at(look: &mut Lookahead<'_>, start: Position, offset: usi
             let walked = bytes.get(..offset).unwrap_or(bytes);
             advance_position(start, walked)
         }
-        Err(_) => Position {
-            byte: start
-                .byte
-                .saturating_add(u64::try_from(offset).unwrap_or(u64::MAX)),
-            ..start
-        },
+        Err(_) => start.advanced_by(u64::try_from(offset).unwrap_or(u64::MAX)),
     }
 }
 
@@ -362,7 +356,7 @@ pub(crate) mod tests {
         loop {
             let token = lexer.next_token()?;
             let done = token.kind == Json5Token::Eof;
-            out.push((token.kind, token.span.start, token.span.end));
+            out.push((token.kind, token.span().start(), token.span().end()));
 
             if done {
                 break;
@@ -472,19 +466,19 @@ pub(crate) mod tests {
         // U+200B zero width space is Cf, not Zs, and not in Table 3.
         let error = lex_error("\u{200B}");
         assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-        assert_eq!(error.position.byte, 0);
+        assert_eq!(error.position.byte(), 0);
     }
 
     #[test]
     fn advance_position_mirrors_the_lexer_core() {
         let start = Position::START;
         let end = advance_position(start, b"a\r\nb");
-        assert_eq!(end.byte, 4);
-        assert_eq!(end.line, 2);
-        assert_eq!(end.column, 2);
+        assert_eq!(end.byte(), 4);
+        assert_eq!(end.line(), 2);
+        assert_eq!(end.column(), 2);
 
         let end = advance_position(start, b"\r\r");
-        assert_eq!(end.line, 3);
-        assert_eq!(end.column, 1);
+        assert_eq!(end.line(), 3);
+        assert_eq!(end.column(), 1);
     }
 }

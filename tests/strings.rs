@@ -65,8 +65,8 @@ fn raw_line_and_paragraph_separators_parse_with_a_warning() -> Result<(), Json5E
             WarningKind::UnescapedLineSeparator { separator }
         );
         // Bytes: 0 `'`, 1 `a`, 2 `b`, 3..6 the separator.
-        assert_eq!(warning.position.byte, 3);
-        assert_eq!(warning.position.line, 1);
+        assert_eq!(warning.position.byte(), 3);
+        assert_eq!(warning.position.line(), 1);
     }
 
     Ok(())
@@ -109,8 +109,8 @@ fn multiple_warnings_arrive_in_source_order() -> Result<(), Json5Error> {
 
     assert_eq!(warnings.len(), 2);
     assert!(
-        warnings.first().map(|warning| warning.position.byte)
-            < warnings.get(1).map(|warning| warning.position.byte)
+        warnings.first().map(|warning| warning.position.byte())
+            < warnings.get(1).map(|warning| warning.position.byte())
     );
     assert!(matches!(
         warnings.first().map(|warning| warning.kind),
@@ -131,9 +131,9 @@ fn warning_positions_account_for_line_continuations() -> Result<(), Json5Error> 
         panic!("expected one warning");
     };
 
-    assert_eq!(warning.position.byte, 5);
-    assert_eq!(warning.position.line, 2);
-    assert_eq!(warning.position.column, 2);
+    assert_eq!(warning.position.byte(), 5);
+    assert_eq!(warning.position.line(), 2);
+    assert_eq!(warning.position.column(), 2);
 
     Ok(())
 }

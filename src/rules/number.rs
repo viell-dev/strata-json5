@@ -58,10 +58,10 @@ impl Matcher for NumberRule {
         // Signed Infinity / NaN (bare words belong to the identifier rule).
         if index > 0 {
             if let Some(len) = measure_word(look, index, b"Infinity")? {
-                return Ok(Some(Match::new(Json5Token::Number, len)));
+                return Ok(Match::from_len(Json5Token::Number, len));
             }
             if let Some(len) = measure_word(look, index, b"NaN")? {
-                return Ok(Some(Match::new(Json5Token::Number, len)));
+                return Ok(Match::from_len(Json5Token::Number, len));
             }
         }
 
@@ -82,7 +82,7 @@ impl Matcher for NumberRule {
                             return Err(LexError::unrecognized(offset_position(start, hex_start)));
                         }
 
-                        return Ok(Some(Match::new(Json5Token::Number, hex_end)));
+                        return Ok(Match::from_len(Json5Token::Number, hex_end));
                     }
                     // A digit after a leading zero is a grammar error (e.g. `08`).
                     Some(b'0'..=b'9') => {
@@ -136,7 +136,7 @@ impl Matcher for NumberRule {
             index = exp_end;
         }
 
-        Ok(Some(Match::new(Json5Token::Number, index)))
+        Ok(Match::from_len(Json5Token::Number, index))
     }
 }
 
@@ -243,10 +243,10 @@ mod tests {
     fn leading_zeros_are_rejected() {
         let error = lex_error("08");
         assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-        assert_eq!(error.position.byte, 1);
+        assert_eq!(error.position.byte(), 1);
 
         let error = lex_error("-01");
-        assert_eq!(error.position.byte, 2);
+        assert_eq!(error.position.byte(), 2);
     }
 
     #[test]
@@ -279,7 +279,7 @@ mod tests {
                 matches!(error.kind, LexErrorKind::Unrecognized),
                 "input {input:?}"
             );
-            assert_eq!(error.position.byte, 0, "input {input:?}");
+            assert_eq!(error.position.byte(), 0, "input {input:?}");
         }
     }
 
@@ -287,7 +287,7 @@ mod tests {
     fn double_signs_do_not_match() {
         let error = lex_error("+-1");
         assert!(matches!(error.kind, LexErrorKind::Unrecognized));
-        assert_eq!(error.position.byte, 0);
+        assert_eq!(error.position.byte(), 0);
     }
 
     #[test]

@@ -38,7 +38,7 @@ impl Matcher for HashCommentRule {
 
             match bytes.get(len) {
                 Some(b'\n' | b'\r') | None => {
-                    return Ok(Some(Match::new(DialectToken::HashComment, len)));
+                    return Ok(Match::from_len(DialectToken::HashComment, len));
                 }
                 Some(_) => len = len.saturating_add(1),
             }
@@ -109,7 +109,7 @@ fn omitted_rules_leave_the_shape_unknown() {
     let Err(error) = lex_kinds("1 // gone") else {
         panic!("expected the omitted comment rule to leave `//` unrecognized");
     };
-    assert_eq!(error.position.byte, 2);
+    assert_eq!(error.position.byte(), 2);
 }
 
 #[test]
@@ -118,7 +118,7 @@ fn reused_rules_keep_their_validation() {
     let Err(error) = lex_kinds("08") else {
         panic!("expected the reused number rule to keep rejecting leading zeros");
     };
-    assert_eq!(error.position.byte, 1);
+    assert_eq!(error.position.byte(), 1);
 
     // The lifted literal/identifier pair keeps its priority tie-break.
     let kinds = lex_kinds("true").unwrap_or_default();

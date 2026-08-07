@@ -58,7 +58,7 @@ impl Trivia {
     /// Line counting is the byte-oriented lexer core's: `\r`, `\n`, and `\r\n` count; U+2028 and
     /// U+2029 do not advance the diagnostic line number.
     pub const fn line_breaks(&self) -> u64 {
-        self.end.line.saturating_sub(self.start.line)
+        self.end.line().saturating_sub(self.start.line())
     }
 
     /// The number of blank lines inside this trivia piece.
@@ -145,7 +145,10 @@ impl Value {
     /// The absolute byte range this value covers, from its first to its last lexeme byte
     /// (leading trivia excluded).
     pub const fn span(&self) -> Span {
-        Span::new(self.first_token().span.start, self.last_token().span.end)
+        let start = self.first_token().span.start();
+        let end = self.last_token().span.end();
+
+        Span::from_start_len(start, end.saturating_sub(start))
     }
 
     /// Visits every significant token of this value in source order.
@@ -268,9 +271,9 @@ impl fmt::Display for Warning {
                 formatter,
                 "unescaped U+{:04X} in a string at line {}, column {} (byte {})",
                 u32::from(separator),
-                self.position.line,
-                self.position.column,
-                self.position.byte
+                self.position.line(),
+                self.position.column(),
+                self.position.byte()
             ),
         }
     }
@@ -359,14 +362,18 @@ impl Document {
 mod tests {
     use super::*;
 
-    const fn position(byte: u64, line: u64, column: u64) -> Position {
-        Position { byte, line, column }
+    fn position(byte: u64, line: u64, column: u64) -> Position {
+        let Ok(position) = Position::new(byte, line, column) else {
+            panic!("test positions must be one-based");
+        };
+
+        position
     }
 
     fn trivia(kind: TriviaKind, start: Position, end: Position) -> Trivia {
         Trivia {
             kind,
-            span: Span::new(start.byte, end.byte),
+            span: Span::from_start_len(start.byte(), end.byte().saturating_sub(start.byte())),
             start,
             end,
         }
@@ -387,7 +394,7 @@ mod tests {
     fn value_token_walk_covers_containers() {
         let token = |kind: Json5Token, start: u64, end: u64| SyntaxToken {
             kind,
-            span: Span::new(start, end),
+            span: Span::from_start_len(start, end.saturating_sub(start)),
             start: position(start, 1, start.saturating_add(1)),
             end: position(end, 1, end.saturating_add(1)),
             leading: Vec::new(),
@@ -409,7 +416,7 @@ mod tests {
             ),
         });
 
-        assert_eq!(array.span(), Span::new(0, 4));
+        assert_eq!(array.span(), Span::from_start_len(0, 4));
 
         let mut kinds = Vec::new();
         array.for_each_token(&mut |token| kinds.push(token.kind));

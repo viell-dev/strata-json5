@@ -16,7 +16,7 @@ fn assert_lex_error(input: &str, kind: fn(&LexErrorKind) -> bool, byte: u64) {
     match &error.kind {
         Json5ErrorKind::Lex(lex) => {
             assert!(kind(&lex.kind), "input {input:?}: {lex:?}");
-            assert_eq!(lex.position.byte, byte, "input {input:?}");
+            assert_eq!(lex.position.byte(), byte, "input {input:?}");
         }
         other => panic!("expected a lexical error for {input:?}, got {other:?}"),
     }
@@ -42,11 +42,11 @@ fn hex_floats_are_rejected() {
     // The number token ends at `0x1`; the adjacent `.5` number is a parse error.
     let error = parse_error("0x1.5");
     assert!(matches!(error.kind, Json5ErrorKind::TrailingContent { .. }));
-    assert_eq!(error.position.byte, 3);
+    assert_eq!(error.position.byte(), 3);
 
     let error = parse_error("[0x1.5]");
     assert!(matches!(error.kind, Json5ErrorKind::Expected { .. }));
-    assert_eq!(error.position.byte, 4);
+    assert_eq!(error.position.byte(), 4);
 }
 
 #[test]
@@ -97,7 +97,7 @@ fn lone_commas_in_containers_are_rejected() {
             ..
         }
     ));
-    assert_eq!(error.position.byte, 1);
+    assert_eq!(error.position.byte(), 1);
 
     let error = parse_error("{,}");
     assert!(matches!(error.kind, Json5ErrorKind::Expected { .. }));
@@ -107,7 +107,7 @@ fn lone_commas_in_containers_are_rejected() {
 fn double_commas_are_rejected() {
     let error = parse_error("[1,,2]");
     assert!(matches!(error.kind, Json5ErrorKind::Expected { .. }));
-    assert_eq!(error.position.byte, 3);
+    assert_eq!(error.position.byte(), 3);
 
     let error = parse_error("{a: 1,,}");
     assert!(matches!(error.kind, Json5ErrorKind::Expected { .. }));
@@ -199,7 +199,7 @@ fn nested_block_comments_are_rejected() {
 #[test]
 fn error_positions_carry_line_and_column() {
     let error = parse_error("{\n  a: 1,\n  b @\n}");
-    assert_eq!(error.position.line, 3);
+    assert_eq!(error.position.line(), 3);
     // Bytes: line 3 starts at byte 10; `b` at column 3, ` ` 4, `@` at column 5.
-    assert_eq!(error.position.column, 5);
+    assert_eq!(error.position.column(), 5);
 }
