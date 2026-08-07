@@ -11,7 +11,7 @@ rust-version = "1.87.0"
 readme = "README.md"
 
 [dependencies]
-strata-json = { path = "../json-llm1" }
+strata-json = { path = "../json-llm2" }
 strata-lexer = { path = "../lexer-llm1" }
 
 [lints.rust]
