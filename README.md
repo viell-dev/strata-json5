@@ -10,6 +10,47 @@ fidelity available (spans, raw bytes, member order, duplicate members, and trivi
 
 This crate is in initial development. The public API is not settled yet.
 
+## Usage
+
+```rust
+use strata_json5::{Json5Error, Json5Number, Json5Resolver, NameStyle};
+
+fn main() -> Result<(), Json5Error> {
+    let document = Json5Resolver::new().resolve_str(
+        "{\n  // limits\n  max: 0x1F,\n  'label': 'caf\\u00e9',\n}",
+    )?;
+
+    let Some(object) = document.root().as_object() else {
+        panic!("expected an object root");
+    };
+
+    // Owned, decoded values with JSON5 semantics: hex numbers, unquoted and
+    // single-quoted member names, trailing commas — all mandatory, no options.
+    assert_eq!(
+        object.get("max").and_then(|v| v.as_number()),
+        Some(Json5Number::U64(31))
+    );
+    assert_eq!(object.get("label").and_then(|v| v.as_str()), Some("café"));
+
+    // Fidelity: name spellings and comments stay reachable.
+    let [max, label] = object.members() else {
+        panic!("expected two members");
+    };
+    assert_eq!(max.name_style(), NameStyle::Identifier);
+    assert_eq!(label.name_style(), NameStyle::SingleQuoted);
+
+    let Some(comment) = max.name_meta().comments().next() else {
+        panic!("expected the comment before \"max\"");
+    };
+    assert_eq!(document.comment_text(comment).as_deref(), Some(" limits"));
+
+    Ok(())
+}
+```
+
+See [docs/strata-json5.md](docs/strata-json5.md) for the design reference, including the
+duplicate-member and lone-surrogate policies and how spec-mandated warnings surface.
+
 ## Minimum Supported Rust Version
 
 The MSRV is **1.87.0**.
