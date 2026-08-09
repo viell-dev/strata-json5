@@ -23,7 +23,7 @@ strata-json5-rules -> strata-json5-parser -> strata-json5 (this crate)
 | Module     | Public items |
 |------------|--------------|
 | `resolve`  | `Json5Resolver<M>`, `Json5ResolverBuilder<M>`, `DuplicateKeys` |
-| `value`    | `Json5Value`, `Json5Array`, `Json5Object`, `Json5Member`, `Json5Number`, `Meta` |
+| `value`    | `Json5Value`, `Json5Array`, `Json5Object`, `Json5Member`, `Json5Number`, `NumberFormat`, `Meta` |
 | `document` | `Json5Document` |
 | `error`    | `Json5Error`, `Json5ErrorKind` |
 
@@ -50,7 +50,9 @@ resolver; a document whose retained source was reclaimed first yields `SourceUna
 - `Json5Value` — the same shape as the JSON resolver's model. `Json5Number` is the parser
   `decode::Number` re-exported: hex integers stay integer-preserving (`0x1F` → `U64(31)`,
   `-0x10` → `I64(-16)`, magnitudes beyond 64 bits round to `f64`); `Infinity`/`NaN` and their
-  signed forms are `F64`; `-0` and `-0x0` keep their sign.
+  signed forms are `F64`; `-0` and `-0x0` keep their sign. The written form rides along as the
+  parser's `NumberFormat` (`Integer`, `Decimal`, `Exponential`, `Hex`, `Infinity`, `NaN`),
+  exposed by `Json5Value::number_format()`.
 - `Json5Member` — the decoded name (identifier `\uXXXX` escapes resolved, so `{"a":1}`,
   `{a:1}`, and `{a:1}` all expose `"a"`), plus `name_style()` (`DoubleQuoted`, `SingleQuoted`,
   or `Identifier`) and `name_meta()` for the raw spelling. `Json5Object::get` resolves to the
