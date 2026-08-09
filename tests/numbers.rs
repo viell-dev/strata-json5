@@ -1,7 +1,7 @@
 //! Number conversion: JSON5 semantics — hex integers, `Infinity`/`NaN`, signs, and integer
 //! preservation.
 
-use strata_json5::{Json5Error, Json5Number, Json5Resolver};
+use strata_json5::{Json5Error, Json5Number, Json5Resolver, NumberFormat};
 
 fn number(input: &str) -> Result<Json5Number, Json5Error> {
     let document = Json5Resolver::new().resolve_str(input)?;
@@ -110,6 +110,26 @@ fn negative_zeros_preserve_their_sign() -> Result<(), Json5Error> {
         };
         assert_eq!(value.to_bits(), (-0.0f64).to_bits(), "input {input:?}");
     }
+
+    Ok(())
+}
+
+fn format(input: &str) -> Result<Option<NumberFormat>, Json5Error> {
+    Ok(Json5Resolver::new()
+        .resolve_str(input)?
+        .root()
+        .number_format())
+}
+
+#[test]
+fn number_formats_surface_the_written_form() -> Result<(), Json5Error> {
+    assert_eq!(format("42")?, Some(NumberFormat::Integer));
+    assert_eq!(format(".5")?, Some(NumberFormat::Decimal));
+    assert_eq!(format("1.23e+5")?, Some(NumberFormat::Exponential));
+    assert_eq!(format("-0x10")?, Some(NumberFormat::Hex));
+    assert_eq!(format("+Infinity")?, Some(NumberFormat::Infinity));
+    assert_eq!(format("NaN")?, Some(NumberFormat::NaN));
+    assert_eq!(format("true")?, None);
 
     Ok(())
 }

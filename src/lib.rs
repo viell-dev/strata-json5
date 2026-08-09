@@ -36,7 +36,9 @@ pub use error::{Json5Error, Json5ErrorKind};
 pub use resolve::{DuplicateKeys, Json5Resolver, Json5ResolverBuilder};
 pub use strata_json5_parser::decode::LoneSurrogates;
 pub use strata_json5_parser::{Trivia, TriviaKind, Warning, WarningKind};
-pub use value::{Json5Array, Json5Member, Json5Number, Json5Object, Json5Value, Meta, NameStyle};
+pub use value::{
+    Json5Array, Json5Member, Json5Number, Json5Object, Json5Value, Meta, NameStyle, NumberFormat,
+};
 
 /// Compile-checks the README examples alongside the doctests.
 #[cfg(doctest)]

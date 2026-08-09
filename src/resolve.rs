@@ -224,7 +224,11 @@ impl Resolution<'_> {
                 let number =
                     decode::parse_number(&raw).map_err(|error| Self::decode_error(token, error))?;
 
-                Ok(Json5Value::Number(number, token_meta(token)))
+                Ok(Json5Value::Number(
+                    number.value,
+                    number.format,
+                    token_meta(token),
+                ))
             }
             Value::String(token) => {
                 let raw = self.raw_bytes(token.span())?;

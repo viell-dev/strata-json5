@@ -4,6 +4,7 @@ use strata_json5_parser::{Trivia, TriviaKind};
 use strata_lexer::{Position, Span};
 
 pub use strata_json5_parser::decode::Number as Json5Number;
+pub use strata_json5_parser::decode::NumberFormat;
 
 /// The written style of an object member name: double-quoted, single-quoted, or an unquoted
 /// identifier. Re-exported from the parser's decode module ([`NameShape`]); see
@@ -94,7 +95,7 @@ pub enum Json5Value {
     /// A `true` or `false` literal.
     Bool(bool, Meta),
     /// A number, converted integer-preserving.
-    Number(Json5Number, Meta),
+    Number(Json5Number, NumberFormat, Meta),
     /// A string, unescaped.
     String(String, Meta),
     /// An array.
@@ -110,7 +111,7 @@ impl Json5Value {
         match self {
             Self::Null(meta)
             | Self::Bool(_, meta)
-            | Self::Number(_, meta)
+            | Self::Number(_, _, meta)
             | Self::String(_, meta) => meta,
             Self::Array(array) => array.meta(),
             Self::Object(object) => object.meta(),
@@ -142,7 +143,20 @@ impl Json5Value {
     #[must_use]
     pub const fn as_number(&self) -> Option<Json5Number> {
         match self {
-            Self::Number(value, _) => Some(*value),
+            Self::Number(value, _, _) => Some(*value),
+            _ => None,
+        }
+    }
+
+    /// The written form of the number, if this is a number.
+    ///
+    /// Author-intent fidelity: `1.23e+5` reports [`NumberFormat::Exponential`] and `0x1F`
+    /// reports [`NumberFormat::Hex`] even though the converted values are plain numbers; the
+    /// raw text stays reachable through the node's span.
+    #[must_use]
+    pub const fn number_format(&self) -> Option<NumberFormat> {
+        match self {
+            Self::Number(_, format, _) => Some(*format),
             _ => None,
         }
     }
